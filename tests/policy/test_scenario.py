@@ -16,34 +16,13 @@
 
 import random
 import datetime
-import pytest
 from mock import MagicMock
 
-from powerfulseal.policy.scenario import Scenario
+import pytest
 
-class Dummy():
-    pass
-
-@pytest.fixture
-def dummy_object():
-    return Dummy()
-
-
-class NoopScenario(Scenario):
-
-    def match(self):
-        return []
-
-    def act(self, items):
-        pass
-
-
-@pytest.fixture
-def noop_scenario():
-    return NoopScenario(
-        name="test scenario",
-        schema={}
-    )
+# noinspection PyUnresolvedReferences
+from tests.fixtures import noop_scenario
+from tests.fixtures import make_dummy_object, dummy_object
 
 
 def test_empty_property_criteria_dont_match(noop_scenario):
@@ -66,9 +45,9 @@ def test_matches_list_types(noop_scenario, dummy_object, query, should_match):
 
 def test_filter_property(noop_scenario):
     ATTR_NAME = "test"
-    dummy1 = dummy_object()
+    dummy1 = make_dummy_object()
     setattr(dummy1, ATTR_NAME, "yes")
-    dummy2 = dummy_object()
+    dummy2 = make_dummy_object()
     setattr(dummy2, ATTR_NAME, "no")
     criterion = {
         "name": ATTR_NAME,
@@ -111,7 +90,7 @@ def test_filter_day_time_day_of_the_week(noop_scenario, some_datetime, day, shou
             "second": 59
         },
     }
-    candidates = [dummy_object(), dummy_object()]
+    candidates = [make_dummy_object(), make_dummy_object()]
     if should_pass:
         assert noop_scenario.filter_day_time(candidates, criterion, now=some_datetime) == candidates
     else:
@@ -148,7 +127,7 @@ def test_filter_day_time_of_day(noop_scenario, some_datetime, hour, minute,secon
             "second": 15
         },
     }
-    candidates = [dummy_object(), dummy_object()]
+    candidates = [make_dummy_object(), make_dummy_object()]
     if should_pass:
         assert noop_scenario.filter_day_time(candidates, criterion, now=some_datetime) == candidates
     else:
@@ -156,7 +135,7 @@ def test_filter_day_time_of_day(noop_scenario, some_datetime, hour, minute,secon
 
 
 def test_random_sample_size(noop_scenario):
-    candidates = [dummy_object() for x in range(100)]
+    candidates = [make_dummy_object() for x in range(100)]
     for x in range(len(candidates)+1):
         sample = noop_scenario.filter_random_sample(candidates,{"size":x})
         assert len(sample) == x
@@ -165,7 +144,7 @@ def test_random_sample_size(noop_scenario):
 
 
 def test_random_sample_percentage(noop_scenario):
-    candidates = [dummy_object() for x in range(100)]
+    candidates = [make_dummy_object() for x in range(100)]
     for x in range(101):
         percentage = x / 100.00
         sample = noop_scenario.filter_random_sample(candidates,{"ratio":percentage})
@@ -173,8 +152,9 @@ def test_random_sample_percentage(noop_scenario):
         for elem in sample:
             assert elem in candidates
 
+
 def test_random_doesnt_pass_on_empty_criterion(noop_scenario):
-    candidates = [dummy_object() for x in range(100)]
+    candidates = [make_dummy_object() for x in range(100)]
     for x in range(101):
         sample = noop_scenario.filter_random_sample(candidates,None)
         assert len(sample) == 0
@@ -189,7 +169,7 @@ def test_random_doesnt_pass_on_empty_criterion(noop_scenario):
 def test_filter_probability(noop_scenario, proba):
     random.seed(7) # make the tests deterministic
     SAMPLES = 100000
-    candidates = [dummy_object(), dummy_object()]
+    candidates = [make_dummy_object(), make_dummy_object()]
     agg_len = 0.0
     criterion = {"probabilityPassAll": proba}
     for _ in range(SAMPLES):
@@ -212,7 +192,7 @@ def test_action_wait(monkeypatch, noop_scenario, sleep_time):
 
 
 def test_filter_mapping_uses_the_mapping(noop_scenario):
-    dummy = dummy_object()
+    dummy = make_dummy_object()
     items = [dummy]
     mapping = {
         "filterA": MagicMock(return_value=items),
@@ -231,7 +211,7 @@ def test_filter_mapping_uses_the_mapping(noop_scenario):
 
 
 def test_acts_mapping_only_waits_once(noop_scenario):
-    items = [dummy_object(), dummy_object()]
+    items = [make_dummy_object(), make_dummy_object()]
     mapping = {
         "wait": MagicMock(return_value=[]),
     }
@@ -240,4 +220,3 @@ def test_acts_mapping_only_waits_once(noop_scenario):
     ]
     noop_scenario.act_mapping(items, actions, mapping)
     assert mapping.get("wait").call_count == 1
-
